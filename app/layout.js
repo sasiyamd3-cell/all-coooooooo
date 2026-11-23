@@ -1,4 +1,4 @@
-import "./globals.css";
+import "./oooooooo.css";
 
 export const metadata = {
   title: "MIYORA | All-in-One Platform",
