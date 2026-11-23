@@ -1,311 +1,1836 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowDownRight, ArrowRight, ArrowUpRight, Asterisk, Bell, Bookmark,
-  Check, ChevronDown, Code2, Command, Copy, Cpu, ExternalLink, Eye,
-  FileCode2, Fingerprint, Globe2, Heart, Image as ImageIcon, Layers3,
-  LockKeyhole, Menu, MessageCircle, Moon, MoreHorizontal, Search, Send,
-  Settings2, ShieldCheck, Sparkles, Star, Sun, Terminal, WandSparkles,
-  X, Zap, QrCode, Braces, KeyRound, Radio, Activity, Clock3, Github
-} from "lucide-react";
 
 const TOOLS = [
-  { id:"chat", name:"AI Chat", category:"AI Studio", description:"A thoughtful AI companion for ideas, questions, and everyday problem-solving.", icon:"spark", tag:"POPULAR", color:"violet" },
-  { id:"writer", name:"Text Studio", category:"AI Studio", description:"Turn rough notes into clear, confident, beautifully structured writing.", icon:"write", tag:"CREATIVE", color:"blue" },
-  { id:"image", name:"Image Studio", category:"AI Studio", description:"Shape visual concepts and build expressive image-generation prompts.", icon:"image", tag:"VISUAL", color:"pink" },
-  { id:"code", name:"Code Assistant", category:"AI Studio", description:"Understand code, explore solutions, and move from bug to breakthrough.", icon:"code", tag:"BUILD", color:"cyan" },
-  { id:"qr", name:"QR Generator", category:"Developer", description:"Create crisp QR codes from links, contact details, or plain text.", icon:"qr", tag:"UTILITY", color:"green" },
-  { id:"json", name:"JSON Studio", category:"Developer", description:"Format, validate, and minify structured data with ease.", icon:"braces", tag:"UTILITY", color:"orange" },
-  { id:"base64", name:"Base64 Lab", category:"Developer", description:"Encode and decode UTF-8 strings directly in your browser.", icon:"terminal", tag:"UTILITY", color:"blue" },
-  { id:"password", name:"Password Lab", category:"Developer", description:"Generate secure random passwords with adjustable complexity.", icon:"key", tag:"SECURITY", color:"violet" },
-  { id:"api", name:"API Playground", category:"Developer", description:"Send HTTP requests and inspect responses in a clean workspace.", icon:"globe", tag:"TESTING", color:"cyan" },
-  { id:"ip", name:"IP Lookup", category:"Developer", description:"Inspect public IP and network information using a lookup service.", icon:"radio", tag:"NETWORK", color:"green" },
-  { id:"notes", name:"Quick Notes", category:"Productivity", description:"Keep small thoughts and useful snippets close at hand.", icon:"write", tag:"FOCUS", color:"pink" },
-  { id:"timer", name:"Focus Timer", category:"Productivity", description:"Make space for deep work with a simple focus session.", icon:"clock", tag:"FOCUS", color:"orange" }
+  {
+    id: 1,
+    name: "AI Assistant",
+    description: "Your intelligent digital assistant.",
+    category: "AI Tools",
+    icon: "✦",
+    color: "violet",
+    options: ["AI Chat", "Ask a Question", "Generate Ideas"],
+  },
+  {
+    id: 2,
+    name: "Code Studio",
+    description: "A clean workspace for developers.",
+    category: "Developer",
+    icon: "⌘",
+    color: "blue",
+    options: ["HTML Editor", "CSS Editor", "JavaScript Editor"],
+  },
+  {
+    id: 3,
+    name: "QR Generator",
+    description: "Create QR codes from text or links.",
+    category: "Utilities",
+    icon: "▦",
+    color: "green",
+    options: ["Text to QR", "URL to QR", "Contact QR"],
+  },
+  {
+    id: 4,
+    name: "Image Studio",
+    description: "Manage and explore your images.",
+    category: "Creative",
+    icon: "▧",
+    color: "pink",
+    options: ["Image Preview", "Image Converter", "Image Tools"],
+  },
+  {
+    id: 5,
+    name: "JSON Formatter",
+    description: "Format and validate JSON data.",
+    category: "Developer",
+    icon: "{ }",
+    color: "orange",
+    options: ["Format JSON", "Minify JSON", "Validate JSON"],
+  },
+  {
+    id: 6,
+    name: "Text Tools",
+    description: "Simple tools for everyday text.",
+    category: "Utilities",
+    icon: "T",
+    color: "cyan",
+    options: ["Word Counter", "Case Converter", "Text Cleaner"],
+  },
+  {
+    id: 7,
+    name: "AI Writer",
+    description: "Create and improve written content.",
+    category: "AI Tools",
+    icon: "✎",
+    color: "violet",
+    options: ["Write Content", "Rewrite Text", "Summarize Text"],
+  },
+  {
+    id: 8,
+    name: "Color Studio",
+    description: "Explore beautiful color combinations.",
+    category: "Creative",
+    icon: "◉",
+    color: "pink",
+    options: ["Color Picker", "Gradient Maker", "Color Palette"],
+  },
 ];
 
-const ICONS = {
-  spark: Sparkles, write: WandSparkles, image: ImageIcon, code: Code2,
-  qr: QrCode, braces: Braces, terminal: Terminal, key: KeyRound,
-  globe: Globe2, radio: Radio, clock: Clock3
-};
-
-const DEFAULT_REVIEWS = [
-  { id:"seed-1", name:"Avery Chen", handle:"@averybuilds", avatar:"A", rating:5, date:"Featured", title:"A beautifully focused workspace", body:"The visual direction feels calm without losing personality. I love having the small utilities together in one place.", helpful:18, featured:true },
-  { id:"seed-2", name:"Noah Williams", handle:"@noah.codes", avatar:"N", rating:5, date:"Featured", title:"Clean, quick, and genuinely useful", body:"The developer tools are easy to reach and the interface stays out of the way. A lovely starting point for a daily toolkit.", helpful:12, featured:true },
-  { id:"seed-3", name:"Mia Laurent", handle:"@mialaurent", avatar:"M", rating:4, date:"Featured", title:"A fresh take on a digital toolbox", body:"Minimal, polished, and simple to understand. Looking forward to seeing the ecosystem grow.", helpful:9, featured:true }
+const CATEGORIES = [
+  "All Tools",
+  "AI Tools",
+  "Developer",
+  "Creative",
+  "Utilities",
 ];
-
-const STORAGE = {
-  reviews:"miyora_reviews_v1", comments:"miyora_comments_v1",
-  favorites:"miyora_favorites_v1", theme:"miyora_theme_v1",
-  profile:"miyora_profile_v1", notes:"miyora_notes_v1"
-};
-
-function readStore(key, fallback) {
-  try { const value = localStorage.getItem(key); return value ? JSON.parse(value) : fallback; }
-  catch { return fallback; }
-}
-function saveStore(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-  catch { return false; }
-}
-function Stars({ value=5, size=13 }) {
-  return <span className="stars" aria-label={`${value} out of 5 stars`}>{[1,2,3,4,5].map(n=><Star key={n} size={size} fill={n<=value?"currentColor":"none"} strokeWidth={1.7} />)}</span>;
-}
-function IconFor({ name, size=20 }) {
-  const Icon = ICONS[name] || Sparkles;
-  return <Icon size={size} strokeWidth={1.65}/>;
-}
-function Avatar({ name="M", small=false }) {
-  return <span className={`avatar ${small?"avatar-small":""}`}>{(name||"M").trim().charAt(0).toUpperCase()}</span>;
-}
-function SectionLabel({ children, right }) {
-  return <div className="section-label"><span>{children}</span>{right}</div>;
-}
-function ToolCard({ tool, onOpen, favorite, onFavorite }) {
-  return <article className="tool-card">
-    <div className="tool-card-top">
-      <div className={`tool-icon ${tool.color}`}><IconFor name={tool.icon} size={21}/></div>
-      <button className={`icon-quiet ${favorite?"is-favorite":""}`} onClick={()=>onFavorite(tool.id)} aria-label="Toggle favourite"><Bookmark size={16} fill={favorite?"currentColor":"none"}/></button>
-    </div>
-    <div className="tool-tag">{tool.tag}</div>
-    <h3>{tool.name}</h3>
-    <p>{tool.description}</p>
-    <button className="card-link" onClick={()=>onOpen(tool)}>{tool.category==="AI Studio"?"Explore tool":"Open utility"} <ArrowUpRight size={14}/></button>
-  </article>;
-}
-
-function ToolModal({ tool, onClose, notify }) {
-  const [input,setInput]=useState("");
-  const [output,setOutput]=useState("");
-  const [method,setMethod]=useState("GET");
-  const [length,setLength]=useState(20);
-  const [symbols,setSymbols]=useState(true);
-  const [numbers,setNumbers]=useState(true);
-  const [busy,setBusy]=useState(false);
-  if (!tool) return null;
-  const setResult=(value)=>setOutput(value);
-  const copy=async()=>{if(!output)return;try{await navigator.clipboard.writeText(output);notify("Copied to clipboard");}catch{notify("Clipboard access is unavailable");}};
-  const run=async()=>{
-    const raw=input.trim();
-    if(tool.id==="json"){
-      try{const parsed=JSON.parse(raw);setResult(JSON.stringify(parsed,null,2));}
-      catch(e){setResult(`Invalid JSON\n${e.message}`);}
-    } else if(tool.id==="base64"){
-      try{setResult(btoa(unescape(encodeURIComponent(raw))));}catch{setResult("Unable to encode this text.");}
-    } else if(tool.id==="password"){
-      let chars="abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
-      if(numbers)chars+="23456789"; if(symbols)chars+="!@#$%^&*()-_=+[]{}?";
-      const bytes=new Uint32Array(length); crypto.getRandomValues(bytes);
-      setResult(Array.from(bytes,n=>chars[n%chars.length]).join(""));
-    } else if(tool.id==="qr"){
-      if(!raw){notify("Enter a URL or text first");return;}
-      setResult("QR_READY:"+raw);
-    } else if(tool.id==="image"){
-      if(!raw){notify("Describe your image idea first");return;}
-      setResult(`Create a premium, high-quality image based on: ${raw}\n\nComposition: intentional framing, elegant lighting, rich details, refined colour harmony. Avoid watermarks and distorted text.`);
-    } else if(tool.id==="writer" || tool.id==="chat" || tool.id==="code"){
-      setResult("This workspace UI is ready. Connect a server-side AI provider to enable live AI responses. Never place provider API keys in browser code.");
-    } else if(tool.id==="ip"){
-      setBusy(true);
-      try{const r=await fetch("https://ipapi.co/json/");const data=await r.json();setResult(JSON.stringify(data,null,2));}
-      catch{setResult("IP lookup failed. Check your connection or try again.");}
-      finally{setBusy(false);}
-    } else if(tool.id==="api"){
-      if(!/^https?:\/\//i.test(raw)){notify("Enter a valid http(s) URL");return;}
-      setBusy(true);
-      try{const response=await fetch(raw,{method});const body=await response.text();setResult(`HTTP ${response.status} ${response.statusText}\n\n${body.slice(0,10000)}`);}
-      catch(e){setResult(`Request failed: ${e.message}\nThe target may block browser CORS requests.`);}
-      finally{setBusy(false);}
-    } else if(tool.id==="timer"){
-      setResult("Focus session ready. Set a timer on your device or use your preferred focus timer.");
-    } else if(tool.id==="notes"){
-      setResult(raw || "Write a note in the input above.");
-    }
-  };
-  const decode=()=>{
-    try{setResult(decodeURIComponent(escape(atob(input.trim()))));}
-    catch{setResult("Invalid Base64 input.");}
-  };
-  return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <section className="tool-modal">
-      <div className="modal-head"><div className={`tool-icon ${tool.color}`}><IconFor name={tool.icon}/></div><button className="icon-quiet" onClick={onClose}><X size={19}/></button></div>
-      <div className="tool-tag">{tool.category} / MIYORA TOOLKIT</div><h2>{tool.name}</h2><p className="modal-description">{tool.description}</p>
-      {tool.id==="password" ? <div className="modal-controls">
-        <label className="field-label">PASSWORD LENGTH <b>{length}</b></label><input type="range" min="8" max="64" value={length} onChange={e=>setLength(+e.target.value)}/>
-        <div className="check-row"><label><input type="checkbox" checked={numbers} onChange={e=>setNumbers(e.target.checked)}/> Numbers</label><label><input type="checkbox" checked={symbols} onChange={e=>setSymbols(e.target.checked)}/> Symbols</label></div>
-      </div> : tool.id==="api" ? <div className="field-inline"><select value={method} onChange={e=>setMethod(e.target.value)}><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select><input value={input} onChange={e=>setInput(e.target.value)} placeholder="https://api.example.com/endpoint"/></div> :
-      <textarea className="modal-input" value={input} onChange={e=>setInput(e.target.value)} rows={tool.id==="json"?8:5} placeholder={tool.id==="json"?'{"hello":"world"}':tool.id==="base64"?"Enter text or Base64 content...":tool.id==="qr"?"https://miyora.example":tool.id==="image"?"A cinematic glass building at twilight...":"Describe what you want to work on..."}/>}
-      <div className="modal-actions">
-        <button className="button-primary" onClick={tool.id==="base64"?decode:run} disabled={busy}>{busy?"Working…":tool.id==="password"?"Generate password":tool.id==="api"?"Send request":tool.id==="base64"?"Decode Base64":"Run tool"} <ArrowRight size={15}/></button>
-        {output && <button className="button-secondary" onClick={copy}><Copy size={14}/> Copy</button>}
-      </div>
-      {output && <div className="tool-output">
-        {output.startsWith("QR_READY:") ? <div className="qr-preview"><img alt="Generated QR code" src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(output.slice(9))}`}/><a href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(output.slice(9))}`} download="miyora-qr.png" target="_blank" rel="noreferrer">Open / download QR <ArrowUpRight size={13}/></a></div> : <pre>{output}</pre>}
-      </div>}
-      <p className="modal-footnote">Runs in your browser unless a clearly identified external service is used. Some services may have their own privacy and CORS restrictions.</p>
-    </section>
-  </div>;
-}
-
-function ReviewCard({ review, onHelpful, helpful }) {
-  return <article className="review-card">
-    <div className="review-user"><Avatar name={review.avatar || review.name}/><div><strong>{review.name}</strong><span>{review.handle || "MIYORA member"} · {review.date}</span></div><button className={`helpful ${helpful?"selected":""}`} onClick={()=>onHelpful(review.id)}><Heart size={14} fill={helpful?"currentColor":"none"}/>{review.helpful || 0}</button></div>
-    <Stars value={review.rating}/>
-    <h3>{review.title}</h3><p>{review.body}</p>
-    <div className="review-card-bottom"><span>{review.featured?"COMMUNITY SPOTLIGHT":"COMMUNITY REVIEW"}</span><MessageCircle size={14}/></div>
-  </article>;
-}
 
 export default function MiyoraApp() {
-  const [theme,setTheme]=useState("dark");
-  const [query,setQuery]=useState("");
-  const [category,setCategory]=useState("All tools");
-  const [activeTool,setActiveTool]=useState(null);
-  const [reviews,setReviews]=useState(DEFAULT_REVIEWS);
-  const [favorites,setFavorites]=useState([]);
-  const [helpful,setHelpful]=useState([]);
-  const [profile,setProfile]=useState({name:"Miyora Guest",handle:"@guest"});
-  const [reviewForm,setReviewForm]=useState({name:"",rating:5,title:"",body:""});
-  const [comment,setComment]=useState("");
-  const [comments,setComments]=useState([]);
-  const [notice,setNotice]=useState("");
-  const [mobileNav,setMobileNav]=useState(false);
-  const [showAllReviews,setShowAllReviews]=useState(false);
-  const [activeNav,setActiveNav]=useState("Home");
-  const [newsletter,setNewsletter]=useState("");
-  const [newsletterDone,setNewsletterDone]=useState(false);
+  const [activeCategory, setActiveCategory] = useState("All Tools");
+  const [search, setSearch] = useState("");
+  const [selectedTool, setSelectedTool] = useState(null);
+  const [favorites, setFavorites] = useState([]);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [reviewText, setReviewText] = useState("");
+  const [commentText, setCommentText] = useState("");
+  const [rating, setRating] = useState(5);
+  const [userName, setUserName] = useState("MIYORA User");
+  const [ready, setReady] = useState(false);
 
-  useEffect(()=>{
-    setReviews(readStore(STORAGE.reviews,DEFAULT_REVIEWS));
-    setComments(readStore(STORAGE.comments,[]));
-    setFavorites(readStore(STORAGE.favorites,[]));
-    setTheme(readStore(STORAGE.theme,"dark"));
-    setProfile(readStore(STORAGE.profile,{name:"Miyora Guest",handle:"@guest"}));
-  },[]);
-  useEffect(()=>{document.documentElement.dataset.theme=theme;},[theme]);
-  useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(""),2600);return()=>clearTimeout(t);},[notice]);
-  const notify=(message)=>setNotice(message);
-  const filteredTools=useMemo(()=>TOOLS.filter(t=>(category==="All tools"||t.category===category) && `${t.name} ${t.description} ${t.category}`.toLowerCase().includes(query.toLowerCase())),[category,query]);
-  const userReviews=reviews.filter(r=>!r.featured);
-  const average=reviews.length?reviews.reduce((sum,r)=>sum+r.rating,0)/reviews.length:0;
-  const toggleFavorite=(id)=>{const next=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];setFavorites(next);saveStore(STORAGE.favorites,next);notify(next.includes(id)?"Added to favourites":"Removed from favourites");};
-  const addReview=(e)=>{
-    e.preventDefault();
-    if(!reviewForm.name.trim()||!reviewForm.title.trim()||!reviewForm.body.trim()){notify("Please complete every review field");return;}
-    if(reviewForm.body.length>700){notify("Review must be under 700 characters");return;}
-    const item={id:`review-${Date.now()}`,name:reviewForm.name.trim(),handle:"Community member",avatar:reviewForm.name.trim()[0],rating:Number(reviewForm.rating),date:new Date().toLocaleDateString(),title:reviewForm.title.trim(),body:reviewForm.body.trim(),helpful:0,featured:false};
-    const next=[item,...reviews];setReviews(next);saveStore(STORAGE.reviews,next);
-    setReviewForm({name:"",rating:5,title:"",body:""});notify("Your review was saved on this device");
-  };
-  const addComment=(e)=>{
-    e.preventDefault();if(!comment.trim())return;
-    const next=[{id:Date.now(),name:profile.name,body:comment.trim(),date:new Date().toLocaleString()},...comments];
-    setComments(next);saveStore(STORAGE.comments,next);setComment("");notify("Comment saved locally");
-  };
-  const markHelpful=(id)=>{const next=helpful.includes(id)?helpful.filter(x=>x!==id):[...helpful,id];setHelpful(next);};
-  const changeProfile=(e)=>{e.preventDefault();const name=e.target.profileName.value.trim();if(!name)return;const next={name,handle:"@"+name.toLowerCase().replace(/[^a-z0-9]+/g,"")};setProfile(next);saveStore(STORAGE.profile,next);notify("Profile updated on this device");};
-  const scrollTo=(id,label)=>{setActiveNav(label);setMobileNav(false);document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"});};
-  const navItems=[["Home","home"],["Explore","explore"],["Community","community"],["About","about"]];
-  const visibleReviews=showAllReviews?reviews:reviews.slice(0,3);
+  useEffect(() => {
+    try {
+      const savedFavorites = JSON.parse(
+        localStorage.getItem("miyora-favorites") || "[]"
+      );
+      const savedReviews = JSON.parse(
+        localStorage.getItem("miyora-reviews") || "[]"
+      );
+      const savedComments = JSON.parse(
+        localStorage.getItem("miyora-comments") || "[]"
+      );
 
-  return <main className="site-root">
-    <div className="announcement"><span className="announcement-dot"></span> A NEW SPACE FOR YOUR DIGITAL LIFE <span className="announcement-sep">·</span> MEET MIYORA <ArrowUpRight size={12}/></div>
-    <header className="site-header">
-      <a className="wordmark" href="#home" onClick={()=>setActiveNav("Home")}><span className="wordmark-symbol">m</span><span>miyora<span className="wordmark-period">.</span></span></a>
-      <nav className={`desktop-nav ${mobileNav?"nav-open":""}`}>
-        {navItems.map(([label,id])=><button key={label} className={activeNav===label?"nav-active":""} onClick={()=>scrollTo(id,label)}>{label}</button>)}
-      </nav>
-      <div className="header-actions">
-        <button className="theme-toggle" aria-label="Toggle colour theme" onClick={()=>{const next=theme==="dark"?"light":"dark";setTheme(next);saveStore(STORAGE.theme,next);}}>{theme==="dark"?<Sun size={16}/>:<Moon size={16}/>}</button>
-        <button className="button-primary header-cta" onClick={()=>scrollTo("explore","Explore")}>Explore workspace <ArrowUpRight size={14}/></button>
-        <button className="mobile-menu-button" onClick={()=>setMobileNav(!mobileNav)} aria-label="Toggle navigation">{mobileNav?<X/>:<Menu/>}</button>
-      </div>
-    </header>
+      setFavorites(savedFavorites);
+      setReviews(savedReviews);
+      setComments(savedComments);
 
-    <section className="hero-section" id="home">
-      <div className="hero-grid-lines"></div><div className="hero-orb orb-one"></div><div className="hero-orb orb-two"></div>
-      <div className="hero-content">
-        <div className="eyebrow-pill"><span className="eyebrow-spark"><Sparkles size={12}/></span> THE DIGITAL WORKSPACE, REIMAGINED <span className="pill-live">01 / 04</span></div>
-        <h1>Make space for<br/><span className="gradient-text">what’s possible.</span></h1>
-        <p className="hero-description">A considered collection of AI experiences, developer utilities, and creative tools — designed to make your next idea feel a little closer.</p>
-        <div className="hero-actions"><button className="button-primary button-large" onClick={()=>scrollTo("explore","Explore")}>Explore MIYORA <ArrowUpRight size={16}/></button><button className="button-text" onClick={()=>scrollTo("about","About")}>Discover the vision <ArrowDownRight size={15}/></button></div>
-        <div className="hero-proof"><div className="proof-avatars"><Avatar name="A"/><Avatar name="N"/><Avatar name="M"/><span className="proof-plus">+</span></div><div><strong>Made for curious minds</strong><span>One home for your everyday workflow</span></div><div className="proof-divider"></div><div className="proof-rating"><Stars value={5} size={11}/><strong>4.9 / 5</strong><span>Community sentiment</span></div></div>
-      </div>
-      <div className="hero-visual" aria-label="Abstract MIYORA workspace preview">
-        <div className="visual-glow"></div>
-        <div className="orbit orbit-a"></div><div className="orbit orbit-b"></div>
-        <div className="floating-chip chip-top"><span className="chip-icon"><Sparkles size={14}/></span><span><b>AI Studio</b><small>Ideas in motion</small></span><span className="chip-status"></span></div>
-        <div className="dashboard-preview">
-          <div className="preview-top"><div className="preview-brand"><span className="mini-mark">m</span><b>miyora<span>.</span></b></div><div className="preview-dots"><i></i><i></i><i></i></div></div>
-          <div className="preview-body"><div className="preview-kicker">YOUR WORKSPACE / 01</div><h3>Good things<br/>start here<span>.</span></h3><div className="preview-line"></div>
-            <div className="preview-metrics"><div><span>TOOLS</span><b>12</b></div><div><span>COLLECTIONS</span><b>04</b></div><div><span>YOUR FLOW</span><b>∞</b></div></div>
-            <div className="preview-tools"><div><span className="preview-tool-icon purple"><Sparkles size={14}/></span><span><b>AI Assistant</b><small>Ready to explore</small></span><ArrowUpRight size={13}/></div><div><span className="preview-tool-icon blue"><Code2 size={14}/></span><span><b>Developer kit</b><small>Build with clarity</small></span><ArrowUpRight size={13}/></div></div>
+      setUserName(
+        localStorage.getItem("miyora-username") || "MIYORA User"
+      );
+    } catch (error) {
+      console.error("MIYORA storage error:", error);
+    }
+
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    localStorage.setItem("miyora-favorites", JSON.stringify(favorites));
+    localStorage.setItem("miyora-reviews", JSON.stringify(reviews));
+    localStorage.setItem("miyora-comments", JSON.stringify(comments));
+    localStorage.setItem("miyora-username", userName);
+  }, [favorites, reviews, comments, userName, ready]);
+
+  const filteredTools = useMemo(() => {
+    return TOOLS.filter((tool) => {
+      const categoryMatch =
+        activeCategory === "All Tools" ||
+        tool.category === activeCategory;
+
+      const searchMatch =
+        tool.name.toLowerCase().includes(search.toLowerCase()) ||
+        tool.description.toLowerCase().includes(search.toLowerCase());
+
+      return categoryMatch && searchMatch;
+    });
+  }, [activeCategory, search]);
+
+  function toggleFavorite(id) {
+    setFavorites((old) =>
+      old.includes(id)
+        ? old.filter((item) => item !== id)
+        : [...old, id]
+    );
+  }
+
+  function addReview(event) {
+    event.preventDefault();
+    if (!reviewText.trim()) return;
+
+    setReviews((old) => [
+      {
+        id: Date.now(),
+        name: userName,
+        text: reviewText.trim(),
+        rating,
+        date: new Date().toLocaleDateString(),
+      },
+      ...old,
+    ]);
+
+    setReviewText("");
+    setRating(5);
+  }
+
+  function addComment(event) {
+    event.preventDefault();
+    if (!commentText.trim()) return;
+
+    setComments((old) => [
+      {
+        id: Date.now(),
+        name: userName,
+        text: commentText.trim(),
+        date: new Date().toLocaleDateString(),
+      },
+      ...old,
+    ]);
+
+    setCommentText("");
+  }
+
+  function selectOption(option) {
+    setSelectedTool(null);
+    alert(
+      `${option}\n\nThis tool option is ready for its individual feature integration.`
+    );
+  }
+
+  return (
+    <main className="miyora-app">
+      {mobileMenu && (
+        <div
+          className="mi-overlay"
+          onClick={() => setMobileMenu(false)}
+        />
+      )}
+
+      <aside className={`mi-sidebar ${mobileMenu ? "mi-sidebar-open" : ""}`}>
+        <div className="mi-brand">
+          <div className="mi-logo">M</div>
+          <div>
+            <strong>MIYORA</strong>
+            <span>DIGITAL WORKSPACE</span>
+          </div>
+          <button
+            className="mi-close"
+            onClick={() => setMobileMenu(false)}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mi-label">WORKSPACE</div>
+
+        <nav className="mi-nav">
+          {CATEGORIES.map((category, index) => (
+            <button
+              key={category}
+              className={
+                activeCategory === category
+                  ? "mi-nav-item mi-nav-active"
+                  : "mi-nav-item"
+              }
+              onClick={() => {
+                setActiveCategory(category);
+                setMobileMenu(false);
+                document
+                  .getElementById("mi-tools")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
+              <span>
+                {["▦", "✦", "⌘", "◈", "◉"][index]}
+              </span>
+              {category === "All Tools" ? "Dashboard" : category}
+            </button>
+          ))}
+        </nav>
+
+        <div className="mi-sidebar-bottom">
+          <div className="mi-promo">
+            <div className="mi-promo-icon">✧</div>
+            <strong>Make something great.</strong>
+            <p>Your ideas deserve a beautiful digital space.</p>
+          </div>
+
+          <div className="mi-profile">
+            <div className="mi-avatar">M</div>
+            <div className="mi-profile-text">
+              <strong>{userName}</strong>
+              <span>Personal Workspace</span>
+            </div>
+            <button
+              className="mi-profile-edit"
+              title="Change profile name"
+              onClick={() => {
+                const next = window.prompt("Enter your display name", userName);
+                if (next && next.trim()) setUserName(next.trim());
+              }}
+            >
+              •••
+            </button>
           </div>
         </div>
-        <div className="floating-chip chip-bottom"><span className="mini-check"><Check size={12}/></span><span><b>In your flow</b><small>Less friction, more focus</small></span></div>
-        <div className="visual-caption"><span>FIG. 01</span> A workspace with intention</div>
-      </div>
-      <div className="hero-bottom-note"><span>SCROLL TO EXPLORE</span><div className="scroll-line"></div><span>01 — 04</span></div>
-    </section>
+      </aside>
 
-    <section className="trust-strip">
-      <span>BUILT AROUND THE WAY YOU CREATE</span><div className="trust-items"><span><Sparkles size={14}/> AI EXPERIENCES</span><span><Code2 size={14}/> DEVELOPER UTILITIES</span><span><Layers3 size={14}/> PRODUCTIVITY</span><span><ShieldCheck size={14}/> PRIVACY MINDED</span></div>
-    </section>
+      <section className="mi-main">
+        <header className="mi-topbar">
+          <button
+            className="mi-menu-button"
+            onClick={() => setMobileMenu(true)}
+            aria-label="Open navigation"
+          >
+            ☰
+          </button>
 
-    <section className="intro-section section-wrap" id="about">
-      <div className="intro-left"><SectionLabel>01 / THE MIYORA IDEA</SectionLabel><h2>Less noise.<br/><span className="muted-heading">More meaningful</span><br/>momentum.</h2></div>
-      <div className="intro-right"><p className="intro-lead">Your best work rarely happens when you’re hunting for the right tool.</p><p>MIYORA brings useful digital experiences into one carefully designed space. From a quick developer utility to a fresh creative spark, everything is built around one simple thought: technology should feel empowering, not overwhelming.</p><button className="underlined-link" onClick={()=>scrollTo("explore","Explore")}>Find your next favourite tool <ArrowUpRight size={15}/></button></div>
-      <div className="intro-index">M / 01</div>
-    </section>
+          <div className="mi-breadcrumb">
+            Workspace <span>/</span> <strong>Dashboard</strong>
+          </div>
 
-    <section className="explore-section section-wrap" id="explore">
-      <div className="section-heading-row"><div><SectionLabel>02 / YOUR TOOLKIT</SectionLabel><h2>Small tools.<br/><span className="muted-heading">Big possibilities.</span></h2></div><p className="section-heading-copy">A growing collection of thoughtful tools for building, creating, and getting things done. Pick a starting point.</p></div>
-      <div className="tool-filter-bar"><div className="category-tabs">{["All tools","AI Studio","Developer","Productivity"].map(c=><button key={c} className={category===c?"selected":""} onClick={()=>setCategory(c)}>{c}</button>)}</div><label className="tool-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Find a tool..."/><kbd>⌘ K</kbd></label></div>
-      <div className="tool-grid">{filteredTools.map(tool=><ToolCard key={tool.id} tool={tool} onOpen={setActiveTool} favorite={favorites.includes(tool.id)} onFavorite={toggleFavorite}/>)}</div>
-      {filteredTools.length===0&&<div className="empty-tools"><Search size={22}/><b>No tools found</b><span>Try another search or category.</span></div>}
-      <div className="tool-grid-footer"><span>SHOWING {filteredTools.length.toString().padStart(2,"0")} OF {TOOLS.length.toString().padStart(2,"0")} EXPERIENCES</span><span>MORE TO COME <Asterisk size={13}/></span></div>
-    </section>
+          <div className="mi-top-right">
+            <span className="mi-online-dot" />
+            <span className="mi-online-text">Workspace ready</span>
+            <div className="mi-top-avatar">M</div>
+          </div>
+        </header>
 
-    <section className="feature-band">
-      <div className="feature-band-inner"><div className="feature-art"><div className="feature-ring ring-one"></div><div className="feature-ring ring-two"></div><div className="feature-core"><Command size={34}/></div><span className="art-label art-label-one">THINK</span><span className="art-label art-label-two">CREATE</span><span className="art-label art-label-three">BUILD</span></div>
-        <div className="feature-copy"><SectionLabel>03 / A BETTER KIND OF TOOLBOX</SectionLabel><h2>Designed to<br/>keep you <span className="gradient-text">in flow.</span></h2><p>Every detail has a job. Clear navigation, quick actions, thoughtful feedback, and a responsive interface that feels at home on every screen.</p><div className="feature-points"><div><span><Zap size={15}/></span><b>Quick by design</b><small>Reach useful tools without the clutter.</small></div><div><span><Fingerprint size={15}/></span><b>Your browser, your space</b><small>Local preferences and community content stay on this device.</small></div><div><span><Layers3 size={15}/></span><b>One connected feel</b><small>A consistent experience from idea to execution.</small></div></div></div>
-      </div>
-    </section>
+        <div className="mi-content">
+          <section className="mi-hero">
+            <div className="mi-hero-content">
+              <span className="mi-eyebrow">
+                <i /> YOUR SPACE. YOUR TOOLS.
+              </span>
 
-    <section className="community-section section-wrap" id="community">
-      <div className="section-heading-row community-heading"><div><SectionLabel>04 / THE COMMUNITY</SectionLabel><h2>Good things are<br/><span className="muted-heading">better shared.</span></h2></div><div className="community-summary"><div className="summary-score">{average.toFixed(1)}<span>/5</span></div><Stars value={Math.round(average)} size={14}/><small>{reviews.length} reviews saved in this browser</small></div></div>
-      <div className="reviews-layout">
-        <div className="reviews-list">
-          {visibleReviews.map(review=><ReviewCard key={review.id} review={review} onHelpful={markHelpful} helpful={helpful.includes(review.id)}/>)}
-          {reviews.length>3&&<button className="button-secondary view-reviews" onClick={()=>setShowAllReviews(!showAllReviews)}>{showAllReviews?"Show less":"View all reviews"} <ArrowDownRight size={14}/></button>}
-          <div className="community-note"><ShieldCheck size={16}/><span>Reviews are stored locally in this browser. They are not published to other visitors.</span></div>
+              <h1>
+                Good things
+                <br />
+                start <em>here.</em>
+              </h1>
+
+              <p>
+                A calm and powerful space for your ideas,
+                creativity and everyday digital work.
+              </p>
+
+              <button
+                className="mi-explore"
+                onClick={() =>
+                  document
+                    .getElementById("mi-tools")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                Explore tools <span>↗</span>
+              </button>
+            </div>
+
+            <div className="mi-hero-art" aria-hidden="true">
+              <div className="mi-art-glow" />
+              <div className="mi-art-orbit mi-orbit-one" />
+              <div className="mi-art-orbit mi-orbit-two" />
+              <div className="mi-art-core">M</div>
+              <div className="mi-art-float mi-float-one">✦</div>
+              <div className="mi-art-float mi-float-two">◈</div>
+              <div className="mi-art-float mi-float-three">✧</div>
+            </div>
+          </section>
+
+          <section className="mi-stats">
+            <div className="mi-stat">
+              <div className="mi-stat-icon blue-bg">▦</div>
+              <div>
+                <strong>{TOOLS.length.toString().padStart(2, "0")}</strong>
+                <span>Available tools</span>
+              </div>
+            </div>
+
+            <div className="mi-stat">
+              <div className="mi-stat-icon pink-bg">♡</div>
+              <div>
+                <strong>{favorites.length.toString().padStart(2, "0")}</strong>
+                <span>Your favorites</span>
+              </div>
+            </div>
+
+            <div className="mi-stat">
+              <div className="mi-stat-icon green-bg">✦</div>
+              <div>
+                <strong>{CATEGORIES.length - 1}</strong>
+                <span>Collections</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="mi-tools-section" id="mi-tools">
+            <div className="mi-section-heading">
+              <div>
+                <span className="mi-section-eyebrow">DISCOVER</span>
+                <h2>
+                  Your toolbox<span>.</span>
+                </h2>
+                <p>Everything you need, beautifully organized.</p>
+              </div>
+
+              <div className="mi-search">
+                <span>⌕</span>
+                <input
+                  type="search"
+                  placeholder="Search tools..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  aria-label="Search tools"
+                />
+              </div>
+            </div>
+
+            <div className="mi-filters">
+              {CATEGORIES.map((category) => (
+                <button
+                  key={category}
+                  className={
+                    activeCategory === category
+                      ? "mi-filter mi-filter-active"
+                      : "mi-filter"
+                  }
+                  onClick={() => setActiveCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+
+            <div className="mi-tools-grid">
+              {filteredTools.map((tool) => (
+                <article className="mi-tool-card" key={tool.id}>
+                  <div className="mi-tool-top">
+                    <div className={`mi-tool-icon ${tool.color}`}>
+                      {tool.icon}
+                    </div>
+
+                    <button
+                      className={
+                        favorites.includes(tool.id)
+                          ? "mi-fav mi-fav-active"
+                          : "mi-fav"
+                      }
+                      onClick={() => toggleFavorite(tool.id)}
+                      aria-label="Toggle favorite"
+                    >
+                      {favorites.includes(tool.id) ? "♥" : "♡"}
+                    </button>
+                  </div>
+
+                  <span className="mi-tool-category">
+                    {tool.category}
+                  </span>
+
+                  <h3>{tool.name}</h3>
+                  <p>{tool.description}</p>
+
+                  <button
+                    className="mi-open-button"
+                    onClick={() => setSelectedTool(tool)}
+                  >
+                    <span>Open</span>
+                    <span>↗</span>
+                  </button>
+                </article>
+              ))}
+            </div>
+
+            {filteredTools.length === 0 && (
+              <div className="mi-empty">
+                <span>⌕</span>
+                <h3>No tools found</h3>
+                <p>Try another search or category.</p>
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setActiveCategory("All Tools");
+                  }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className="mi-community">
+            <div className="mi-community-heading">
+              <span className="mi-section-eyebrow">COMMUNITY</span>
+              <h2>Share your thoughts<span>.</span></h2>
+              <p>Your feedback helps make MIYORA better.</p>
+            </div>
+
+            <div className="mi-community-grid">
+              <form className="mi-feedback-card" onSubmit={addReview}>
+                <h3>Write a review</h3>
+                <p>How is your MIYORA experience?</p>
+
+                <div className="mi-rating">
+                  {[1, 2, 3, 4, 5].map((number) => (
+                    <button
+                      key={number}
+                      type="button"
+                      className={number <= rating ? "star-active" : ""}
+                      onClick={() => setRating(number)}
+                      aria-label={`${number} stars`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  value={reviewText}
+                  onChange={(event) => setReviewText(event.target.value)}
+                  placeholder="Write your review..."
+                  rows={3}
+                />
+
+                <button className="mi-submit" type="submit">
+                  Publish review ↗
+                </button>
+              </form>
+
+              <form className="mi-feedback-card" onSubmit={addComment}>
+                <h3>Leave a comment</h3>
+                <p>Tell us what you think.</p>
+
+                <textarea
+                  value={commentText}
+                  onChange={(event) => setCommentText(event.target.value)}
+                  placeholder="Write a comment..."
+                  rows={5}
+                />
+
+                <button className="mi-submit" type="submit">
+                  Post comment ↗
+                </button>
+              </form>
+            </div>
+
+            <div className="mi-posts">
+              <div className="mi-post-column">
+                <h3>Latest reviews <span>{reviews.length}</span></h3>
+                {reviews.length === 0 ? (
+                  <p className="mi-no-posts">No reviews yet. Be the first!</p>
+                ) : (
+                  reviews.map((review) => (
+                    <article className="mi-post" key={review.id}>
+                      <div className="mi-post-head">
+                        <strong>{review.name}</strong>
+                        <span>{review.date}</span>
+                      </div>
+                      <div className="mi-post-stars">
+                        {"★".repeat(review.rating)}
+                        <span>{"★".repeat(5 - review.rating)}</span>
+                      </div>
+                      <p>{review.text}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+
+              <div className="mi-post-column">
+                <h3>Latest comments <span>{comments.length}</span></h3>
+                {comments.length === 0 ? (
+                  <p className="mi-no-posts">No comments yet. Start a conversation!</p>
+                ) : (
+                  comments.map((comment) => (
+                    <article className="mi-post" key={comment.id}>
+                      <div className="mi-post-head">
+                        <strong>{comment.name}</strong>
+                        <span>{comment.date}</span>
+                      </div>
+                      <p>{comment.text}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+
+          <footer className="mi-footer">
+            <span>© 2026 MIYORA</span>
+            <span>Designed for a better digital day <b>✦</b></span>
+          </footer>
         </div>
-        <aside className="review-form-card"><div className="form-card-top"><div className="form-icon"><MessageCircle size={18}/></div><span>YOUR VOICE MATTERS</span></div><h3>Leave a little<br/>feedback.</h3><p>Tell us what you think about MIYORA. Your review is saved on this device.</p>
-          <form onSubmit={addReview}>
-            <label className="field-label">YOUR NAME</label><input className="form-field" value={reviewForm.name} onChange={e=>setReviewForm({...reviewForm,name:e.target.value})} placeholder="How should we call you?"/>
-            <label className="field-label">YOUR RATING</label><div className="rating-picker">{[1,2,3,4,5].map(n=><button type="button" key={n} className={n<=reviewForm.rating?"rating-on":""} onClick={()=>setReviewForm({...reviewForm,rating:n})} aria-label={`${n} stars`}><Star size={20} fill={n<=reviewForm.rating?"currentColor":"none"}/></button>)}</div>
-            <label className="field-label">REVIEW TITLE</label><input className="form-field" value={reviewForm.title} onChange={e=>setReviewForm({...reviewForm,title:e.target.value})} placeholder="Sum it up in a line"/>
-            <label className="field-label">YOUR THOUGHTS</label><textarea className="form-field" rows="4" maxLength="700" value={reviewForm.body} onChange={e=>setReviewForm({...reviewForm,body:e.target.value})} placeholder="What did you enjoy? What could be better?"/>
-            <button className="button-primary submit-review" type="submit">Post review locally <ArrowUpRight size={15}/></button>
-          </form>
-        </aside>
-      </div>
-      <div className="comments-area"><div className="comments-heading"><div><SectionLabel>COMMUNITY WALL</SectionLabel><h3>A thought to add?</h3></div><span>{comments.length} local comments</span></div>
-        <form className="comment-composer" onSubmit={addComment}><Avatar name={profile.name}/><input value={comment} onChange={e=>setComment(e.target.value)} placeholder="Share a thought with your local community wall..." maxLength="400"/><button type="submit" aria-label="Post comment"><Send size={16}/></button></form>
-        <div className="comment-list">{comments.length===0?<div className="no-comments">No comments yet. Start the conversation on this device.</div>:comments.map(c=><article className="comment-item" key={c.id}><Avatar name={c.name}/><div><div className="comment-meta"><b>{c.name}</b><span>{c.date}</span></div><p>{c.body}</p></div></article>)}</div>
-        <form className="profile-edit" onSubmit={changeProfile}><label>POSTING AS</label><input name="profileName" defaultValue={profile.name}/><button type="submit">Update local profile</button></form>
-      </div>
-    </section>
+      </section>
 
-    <section className="manifesto-section"><div className="manifesto-mark">“</div><p>Technology is at its best when it gives your attention back to the things that matter.</p><span>THE MIYORA PRINCIPLE</span><div className="manifesto-decoration"></div></section>
+      {selectedTool && (
+        <div
+          className="mi-modal-backdrop"
+          onClick={() => setSelectedTool(null)}
+        >
+          <section
+            className="mi-options-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="mi-modal-close"
+              onClick={() => setSelectedTool(null)}
+              aria-label="Close options"
+            >
+              ×
+            </button>
 
-    <section className="newsletter-section section-wrap"><div><SectionLabel>05 / STAY IN THE LOOP</SectionLabel><h2>A little more <span className="gradient-text">inspiration.</span></h2><p>Get occasional notes about new tools, thoughtful updates, and things worth exploring.</p></div><form className="newsletter-form" onSubmit={e=>{e.preventDefault();if(newsletter.includes("@")){setNewsletterDone(true);notify("Thanks — this demo does not send or store emails.");}else notify("Enter a valid email address");}}><input type="email" required value={newsletter} onChange={e=>setNewsletter(e.target.value)} placeholder="Your email address"/><button type="submit">{newsletterDone?"You're on the list":"Keep me posted"} <ArrowUpRight size={15}/></button><small>This is a frontend demo. No email is sent or collected.</small></form></section>
+            <div className={`mi-tool-icon mi-modal-icon ${selectedTool.color}`}>
+              {selectedTool.icon}
+            </div>
 
-    <footer className="site-footer"><div className="footer-main"><div className="footer-brand"><a className="wordmark" href="#home"><span className="wordmark-symbol">m</span><span>miyora<span className="wordmark-period">.</span></span></a><p>Your digital world, thoughtfully gathered.</p><div className="footer-social"><a href="https://github.com" target="_blank" rel="noreferrer" aria-label="GitHub"><Github size={16}/></a><a href="#community" aria-label="Community"><MessageCircle size={16}/></a><a href="#explore" aria-label="Explore"><Globe2 size={16}/></a></div></div><div className="footer-links"><div><b>EXPLORE</b><a href="#explore">All tools</a><a href="#community">Community</a><a href="#about">Our vision</a></div><div><b>WORKSPACE</b><a href="#explore">AI Studio</a><a href="#explore">Developer kit</a><a href="#explore">Productivity</a></div><div><b>THE DETAILS</b><a href="#community">Reviews</a><a href="#about">About MIYORA</a><a href="#home">Back to top ↑</a></div></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} MIYORA. MADE FOR WHAT’S NEXT.</span><span>DESIGNED BY <b>SASIYA MIYORA TEAM</b></span><span>LOCAL-FIRST DEMO · V1.0</span></div></footer>
-    {activeTool&&<ToolModal tool={activeTool} onClose={()=>setActiveTool(null)} notify={notify}/>}
-    {notice&&<div className="toast"><Check size={15}/>{notice}</div>}
-  </main>;
+            <span className="mi-section-eyebrow">MIYORA WORKSPACE</span>
+            <h2>{selectedTool.name}</h2>
+            <p>{selectedTool.description}</p>
+
+            <div className="mi-option-list">
+              {selectedTool.options.map((option, index) => (
+                <button
+                  key={option}
+                  className="mi-option-item"
+                  onClick={() => selectOption(option)}
+                >
+                  <span className="mi-option-number">
+                    0{index + 1}
+                  </span>
+                  <strong>{option}</strong>
+                  <span className="mi-option-arrow">↗</span>
+                </button>
+              ))}
+            </div>
+
+            <span className="mi-modal-note">
+              Choose an option to continue.
+            </span>
+          </section>
+        </div>
+      )}
+
+      <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        html {
+          scroll-behavior: smooth;
+        }
+
+        body {
+          margin: 0;
+        }
+
+        button, input, textarea {
+          font: inherit;
+        }
+
+        button {
+          cursor: pointer;
+        }
+
+        .miyora-app {
+          --mi-bg: #f5f6fa;
+          --mi-white: #ffffff;
+          --mi-ink: #171923;
+          --mi-muted: #858a98;
+          --mi-line: #e9eaf0;
+          min-height: 100vh;
+          display: flex;
+          background: var(--mi-bg);
+          color: var(--mi-ink);
+          font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .mi-sidebar {
+          width: 250px;
+          min-width: 250px;
+          height: 100vh;
+          position: sticky;
+          top: 0;
+          display: flex;
+          flex-direction: column;
+          padding: 26px 18px 17px;
+          background: #fff;
+          border-right: 1px solid var(--mi-line);
+          z-index: 20;
+        }
+
+        .mi-brand {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          padding: 0 6px;
+          margin-bottom: 52px;
+        }
+
+        .mi-logo {
+          width: 42px;
+          height: 42px;
+          display: grid;
+          place-items: center;
+          border-radius: 14px;
+          color: #fff;
+          font-size: 23px;
+          font-weight: 800;
+          background: linear-gradient(145deg, #363c4c, #090a0e);
+          box-shadow: 0 6px 16px #10131c24;
+        }
+
+        .mi-brand strong {
+          display: block;
+          font-size: 16px;
+          letter-spacing: 2px;
+        }
+
+        .mi-brand span {
+          display: block;
+          margin-top: 4px;
+          color: #9a9eaa;
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 1px;
+        }
+
+        .mi-label {
+          padding: 0 10px;
+          margin-bottom: 12px;
+          color: #a1a5b0;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+        }
+
+        .mi-nav {
+          display: grid;
+          gap: 7px;
+        }
+
+        .mi-nav-item {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          width: 100%;
+          padding: 12px;
+          border: 0;
+          border-radius: 12px;
+          background: transparent;
+          color: #747987;
+          text-align: left;
+          font-size: 11px;
+          font-weight: 600;
+          transition: .2s;
+        }
+
+        .mi-nav-item span {
+          width: 20px;
+          text-align: center;
+          font-size: 18px;
+        }
+
+        .mi-nav-item:hover {
+          background: #f5f6fa;
+          color: #222735;
+        }
+
+        .mi-nav-active {
+          color: #2869e9;
+          background: #edf3ff;
+        }
+
+        .mi-sidebar-bottom {
+          margin-top: auto;
+        }
+
+        .mi-promo {
+          padding: 16px;
+          margin-bottom: 17px;
+          border: 1px solid #e9ecf4;
+          border-radius: 16px;
+          background: linear-gradient(145deg, #f9faff, #f0f4ff);
+        }
+
+        .mi-promo-icon {
+          width: 30px;
+          height: 30px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 12px;
+          border-radius: 10px;
+          background: #fff;
+          color: #3778f3;
+        }
+
+        .mi-promo strong {
+          font-size: 10px;
+        }
+
+        .mi-promo p {
+          margin: 7px 0 0;
+          color: #9298a7;
+          font-size: 9px;
+          line-height: 1.6;
+        }
+
+        .mi-profile {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding-top: 13px;
+          border-top: 1px solid var(--mi-line);
+        }
+
+        .mi-avatar, .mi-top-avatar {
+          width: 34px;
+          height: 34px;
+          flex: 0 0 34px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          background: #e9efff;
+          color: #3674ed;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .mi-profile-text {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .mi-profile-text strong, .mi-profile-text span {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .mi-profile-text strong {
+          font-size: 10px;
+        }
+
+        .mi-profile-text span {
+          margin-top: 4px;
+          color: #9b9eaa;
+          font-size: 8px;
+        }
+
+        .mi-profile-edit {
+          border: 0;
+          background: transparent;
+          color: #9297a4;
+        }
+
+        .mi-close, .mi-menu-button {
+          display: none;
+        }
+
+        .mi-main {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .mi-topbar {
+          height: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 40px;
+          background: #ffffffdd;
+          border-bottom: 1px solid var(--mi-line);
+        }
+
+        .mi-breadcrumb {
+          color: #999eaa;
+          font-size: 10px;
+        }
+
+        .mi-breadcrumb span {
+          padding: 0 9px;
+          color: #c4c7d0;
+        }
+
+        .mi-breadcrumb strong {
+          color: #303442;
+        }
+
+        .mi-top-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .mi-online-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #35c98a;
+          box-shadow: 0 0 0 4px #35c98a18;
+        }
+
+        .mi-online-text {
+          margin-right: 8px;
+          color: #8b909e;
+          font-size: 9px;
+        }
+
+        .mi-content {
+          width: min(1250px, 100%);
+          padding: 34px 40px 20px;
+          margin: auto;
+        }
+
+        .mi-hero {
+          position: relative;
+          min-height: 280px;
+          display: flex;
+          align-items: center;
+          overflow: hidden;
+          padding: 37px 45px;
+          border-radius: 25px;
+          color: #fff;
+          background:
+            radial-gradient(circle at 78% 42%, #3a5d9a 0, transparent 30%),
+            linear-gradient(112deg, #171b27, #202c43 68%, #192237);
+          box-shadow: 0 15px 35px #202c431c;
+        }
+
+        .mi-hero-content {
+          position: relative;
+          z-index: 2;
+          max-width: 440px;
+        }
+
+        .mi-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: #a9b7d1;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+        }
+
+        .mi-eyebrow i {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #70a6ff;
+          box-shadow: 0 0 12px #70a6ff;
+        }
+
+        .mi-hero h1 {
+          margin: 17px 0 9px;
+          font-size: clamp(36px, 4.2vw, 52px);
+          line-height: 1.08;
+          letter-spacing: -2.5px;
+        }
+
+        .mi-hero h1 em {
+          color: #9ab9ff;
+          font-style: normal;
+        }
+
+        .mi-hero-content p {
+          max-width: 340px;
+          color: #b1bbce;
+          font-size: 10px;
+          line-height: 1.8;
+        }
+
+        .mi-explore {
+          display: inline-flex;
+          align-items: center;
+          gap: 22px;
+          margin-top: 14px;
+          padding: 12px 16px;
+          border: 0;
+          border-radius: 10px;
+          background: #fff;
+          color: #202638;
+          font-size: 10px;
+          font-weight: 800;
+          transition: .2s;
+        }
+
+        .mi-explore:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px #0003;
+        }
+
+        .mi-explore span {
+          font-size: 15px;
+        }
+
+        .mi-hero-art {
+          position: absolute;
+          top: 0;
+          right: 40px;
+          width: 330px;
+          height: 280px;
+          display: grid;
+          place-items: center;
+        }
+
+        .mi-art-glow {
+          position: absolute;
+          width: 180px;
+          height: 180px;
+          border-radius: 50%;
+          background: #477eea;
+          filter: blur(75px);
+          opacity: .55;
+        }
+
+        .mi-art-orbit {
+          position: absolute;
+          width: 215px;
+          height: 215px;
+          border: 1px solid #ffffff25;
+          border-radius: 50%;
+          transform: rotateX(65deg) rotate(-20deg);
+        }
+
+        .mi-orbit-two {
+          width: 260px;
+          height: 260px;
+          transform: rotateX(65deg) rotate(45deg);
+          border-color: #90b4ff35;
+        }
+
+        .mi-art-core {
+          width: 105px;
+          height: 105px;
+          display: grid;
+          place-items: center;
+          border: 1px solid #ffffff55;
+          border-radius: 32px;
+          background: linear-gradient(145deg, #ffffff3a, #ffffff08);
+          backdrop-filter: blur(15px);
+          box-shadow: 0 20px 60px #0004, inset 0 1px #ffffff66;
+          color: #fff;
+          font-size: 55px;
+          font-weight: 800;
+          transform: rotate(-9deg);
+        }
+
+        .mi-art-float {
+          position: absolute;
+          width: 37px;
+          height: 37px;
+          display: grid;
+          place-items: center;
+          border: 1px solid #ffffff35;
+          border-radius: 13px;
+          background: #ffffff18;
+          backdrop-filter: blur(8px);
+          color: #c3d6ff;
+          font-size: 18px;
+        }
+
+        .mi-float-one { top: 45px; right: 55px; }
+        .mi-float-two { bottom: 53px; right: 60px; }
+        .mi-float-three { left: 22px; top: 110px; }
+
+        .mi-stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin: 21px 0 40px;
+        }
+
+        .mi-stat {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          padding: 16px 18px;
+          border: 1px solid var(--mi-line);
+          border-radius: 16px;
+          background: #fff;
+        }
+
+        .mi-stat-icon {
+          width: 39px;
+          height: 39px;
+          flex: 0 0 39px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          font-size: 18px;
+        }
+
+        .blue-bg { background: #f0f4ff; color: #477df0; }
+        .pink-bg { background: #fff0f5; color: #e46c9a; }
+        .green-bg { background: #e6f8f0; color: #21a775; }
+
+        .mi-stat strong, .mi-stat span {
+          display: block;
+        }
+
+        .mi-stat strong {
+          font-size: 19px;
+          letter-spacing: -.7px;
+        }
+
+        .mi-stat div span {
+          margin-top: 4px;
+          color: #969ba8;
+          font-size: 8px;
+        }
+
+        .mi-section-heading {
+          display: flex;
+          align-items: end;
+          justify-content: space-between;
+          gap: 20px;
+        }
+
+        .mi-section-eyebrow {
+          color: #9298a6;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 1.6px;
+        }
+
+        .mi-section-heading h2, .mi-community-heading h2 {
+          margin: 8px 0 6px;
+          font-size: 27px;
+          letter-spacing: -1.2px;
+        }
+
+        .mi-section-heading h2 span, .mi-community-heading h2 span {
+          color: #4380f6;
+        }
+
+        .mi-section-heading p, .mi-community-heading p {
+          color: #959aa7;
+          font-size: 10px;
+        }
+
+        .mi-search {
+          width: 230px;
+          height: 42px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 0 12px;
+          border: 1px solid var(--mi-line);
+          border-radius: 11px;
+          background: #fff;
+        }
+
+        .mi-search > span {
+          color: #858c9c;
+          font-size: 22px;
+        }
+
+        .mi-search input {
+          width: 100%;
+          min-width: 0;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: #171923;
+          font-size: 10px;
+        }
+
+        .mi-filters {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding: 22px 0 16px;
+          scrollbar-width: none;
+        }
+
+        .mi-filters::-webkit-scrollbar {
+          display: none;
+        }
+
+        .mi-filter {
+          flex: 0 0 auto;
+          padding: 9px 14px;
+          border: 1px solid #e9eaf0;
+          border-radius: 9px;
+          background: #fff;
+          color: #858b99;
+          font-size: 9px;
+          font-weight: 700;
+          transition: .2s;
+        }
+
+        .mi-filter:hover {
+          border-color: #a9c4ff;
+        }
+
+        .mi-filter-active {
+          border-color: #222b3d;
+          background: #222b3d;
+          color: #fff;
+        }
+
+        .mi-tools-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+        }
+
+        .mi-tool-card {
+          min-width: 0;
+          min-height: 212px;
+          display: flex;
+          flex-direction: column;
+          padding: 16px;
+          border: 1px solid var(--mi-line);
+          border-radius: 17px;
+          background: #fff;
+          transition: transform .22s, box-shadow .22s, border-color .22s;
+        }
+
+        .mi-tool-card:hover {
+          transform: translateY(-4px);
+          border-color: #d6e2fb;
+          box-shadow: 0 13px 30px #273c6810;
+        }
+
+        .mi-tool-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .mi-tool-icon {
+          width: 43px;
+          height: 43px;
+          flex: 0 0 43px;
+          display: grid;
+          place-items: center;
+          border-radius: 13px;
+          font-size: 20px;
+          font-weight: 700;
+        }
+
+        .mi-tool-icon.violet { background: #f1eaff; color: #8759d8; }
+        .mi-tool-icon.blue { background: #e9f1ff; color: #3779e9; }
+        .mi-tool-icon.green { background: #e6f8f0; color: #21a775; }
+        .mi-tool-icon.pink { background: #fff0f5; color: #e46c9a; }
+        .mi-tool-icon.orange { background: #fff2e7; color: #e38b3d; }
+        .mi-tool-icon.cyan { background: #e8f8fc; color: #2599b7; }
+
+        .mi-fav {
+          width: 30px;
+          height: 30px;
+          border: 1px solid #f0f0f4;
+          border-radius: 50%;
+          background: #fff;
+          color: #a2a6b1;
+          font-size: 16px;
+          transition: .2s;
+        }
+
+        .mi-fav:hover, .mi-fav-active {
+          color: #ec6489;
+          background: #fff1f5;
+          border-color: #ffe0e9;
+        }
+
+        .mi-tool-category {
+          margin-top: 16px;
+          color: #9a9eaa;
+          font-size: 8px;
+        }
+
+        .mi-tool-card h3 {
+          margin: 8px 0 6px;
+          color: #272b38;
+          font-size: 12px;
+          letter-spacing: -.2px;
+        }
+
+        .mi-tool-card > p {
+          min-height: 29px;
+          margin: 0 0 14px;
+          color: #989daa;
+          font-size: 9px;
+          line-height: 1.6;
+        }
+
+        .mi-open-button {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: auto;
+          padding: 10px 12px;
+          border: 1px solid #e9edf5;
+          border-radius: 9px;
+          background: #f9faff;
+          color: #3c65ac;
+          font-size: 9px;
+          font-weight: 800;
+          transition: .2s;
+        }
+
+        .mi-open-button:hover {
+          border-color: #3478f6;
+          background: #3478f6;
+          color: #fff;
+        }
+
+        .mi-open-button span:last-child {
+          font-size: 15px;
+        }
+
+        .mi-empty {
+          padding: 45px 20px;
+          border: 1px dashed #dfe3ec;
+          border-radius: 17px;
+          background: #fff;
+          text-align: center;
+        }
+
+        .mi-empty > span {
+          color: #7b9fe5;
+          font-size: 35px;
+        }
+
+        .mi-empty h3 {
+          margin: 10px 0 6px;
+          font-size: 14px;
+        }
+
+        .mi-empty p {
+          color: #999eaa;
+          font-size: 10px;
+        }
+
+        .mi-empty button {
+          margin-top: 12px;
+          padding: 10px 15px;
+          border: 0;
+          border-radius: 9px;
+          background: #edf3ff;
+          color: #3478f6;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .mi-community {
+          margin-top: 48px;
+        }
+
+        .mi-community-heading {
+          margin-bottom: 18px;
+        }
+
+        .mi-community-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 15px;
+        }
+
+        .mi-feedback-card {
+          min-width: 0;
+          padding: 19px;
+          border: 1px solid var(--mi-line);
+          border-radius: 17px;
+          background: #fff;
+        }
+
+        .mi-feedback-card h3 {
+          margin: 0 0 6px;
+          font-size: 13px;
+        }
+
+        .mi-feedback-card > p {
+          margin: 0 0 13px;
+          color: #989daa;
+          font-size: 9px;
+        }
+
+        .mi-rating {
+          display: flex;
+          gap: 5px;
+          margin-bottom: 12px;
+        }
+
+        .mi-rating button {
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: #d8dbe2;
+          font-size: 22px;
+        }
+
+        .mi-rating button.star-active {
+          color: #f2b84b;
+        }
+
+        .mi-feedback-card textarea {
+          width: 100%;
+          resize: vertical;
+          padding: 12px;
+          border: 1px solid #e9eaf0;
+          border-radius: 10px;
+          outline: none;
+          color: #242836;
+          background: #fafbfe;
+          font-size: 10px;
+          line-height: 1.6;
+        }
+
+        .mi-feedback-card textarea:focus {
+          border-color: #8eb2ff;
+          background: #fff;
+        }
+
+        .mi-submit {
+          width: 100%;
+          margin-top: 10px;
+          padding: 11px;
+          border: 0;
+          border-radius: 10px;
+          background: #202b40;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 700;
+          transition: .2s;
+        }
+
+        .mi-submit:hover {
+          background: #3478f6;
+        }
+
+        .mi-posts {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 15px;
+          margin-top: 20px;
+        }
+
+        .mi-post-column {
+          min-width: 0;
+          padding: 17px;
+          border: 1px solid var(--mi-line);
+          border-radius: 16px;
+          background: #fff;
+        }
+
+        .mi-post-column > h3 {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin: 0 0 13px;
+          font-size: 12px;
+        }
+
+        .mi-post-column > h3 span {
+          display: grid;
+          place-items: center;
+          min-width: 23px;
+          height: 23px;
+          padding: 0 5px;
+          border-radius: 8px;
+          background: #edf3ff;
+          color: #3478f6;
+          font-size: 9px;
+        }
+
+        .mi-post {
+          padding: 12px 0;
+          border-top: 1px solid #f0f1f5;
+        }
+
+        .mi-post-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .mi-post-head strong {
+          color: #343948;
+          font-size: 10px;
+        }
+
+        .mi-post-head span {
+          color: #a0a5b1;
+          font-size: 8px;
+        }
+
+        .mi-post > p {
+          margin: 8px 0 0;
+          color: #737987;
+          font-size: 10px;
+          line-height: 1.7;
+          overflow-wrap: anywhere;
+        }
+
+        .mi-post-stars {
+          margin-top: 7px;
+          color: #f2b84b;
+          font-size: 11px;
+          letter-spacing: 2px;
+        }
+
+        .mi-post-stars span {
+          color: #e2e4e9;
+        }
+
+        .mi-no-posts {
+          padding: 14px 0;
+          border-top: 1px solid #f0f1f5;
+          color: #a0a5b1;
+          font-size: 10px;
+          line-height: 1.6;
+        }
+
+        .mi-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 23px 0 8px;
+          margin-top: 34px;
+          border-top: 1px solid var(--mi-line);
+          color: #a2a6b1;
+          font-size: 9px;
+        }
+
+        .mi-footer b {
+          color: #5487ed;
+        }
+
+        .mi-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          display: grid;
+          place-items: center;
+          padding: 20px;
+          background: #10152280;
+          backdrop-filter: blur(9px);
+        }
+
+        .mi-options-modal {
+          position: relative;
+          width: min(420px, 100%);
+          padding: 29px;
+          border: 1px solid #ffffffaa;
+          border-radius: 24px;
+          background: #fff;
+          box-shadow: 0 25px 80px #0003;
+          animation: mi-modal-in .22s ease-out;
+        }
+
+        @keyframes mi-modal-in {
+          from { opacity: 0; transform: translateY(12px) scale(.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .mi-modal-close {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          width: 31px;
+          height: 31px;
+          border: 0;
+          border-radius: 50%;
+          background: #f2f3f7;
+          color: #777e8d;
+          font-size: 20px;
+        }
+
+        .mi-modal-icon {
+          margin-bottom: 18px;
+        }
+
+        .mi-options-modal h2 {
+          margin: 9px 0 7px;
+          font-size: 23px;
+          letter-spacing: -.8px;
+        }
+
+        .mi-options-modal > p {
+          color: #969ba7;
+          font-size: 10px;
+          line-height: 1.7;
+        }
+
+        .mi-option-list {
+          display: grid;
+          gap: 9px;
+          margin-top: 22px;
+        }
+
+        .mi-option-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 14px;
+          border: 1px solid #eceef3;
+          border-radius: 12px;
+          background: #fff;
+          text-align: left;
+          transition: .2s;
+        }
+
+        .mi-option-item:hover {
+          border-color: #b9d0ff;
+          background: #f7f9ff;
+        }
+
+        .mi-option-number {
+          color: #a1a6b2;
+          font-size: 9px;
+        }
+
+        .mi-option-item strong {
+          flex: 1;
+          color: #343948;
+          font-size: 10px;
+        }
+
+        .mi-option-arrow {
+          color: #5486e7;
+          font-size: 16px;
+        }
+
+        .mi-modal-note {
+          display: block;
+          margin-top: 17px;
+          color: #a0a4ae;
+          text-align: center;
+          font-size: 9px;
+        }
+
+        .mi-overlay {
+          display: none;
+        }
+
+        @media (max-width: 1100px) {
+          .mi-tools-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .mi-content {
+            padding-inline: 26px;
+          }
+
+          .mi-topbar {
+            padding-inline: 26px;
+          }
+
+          .mi-hero-art {
+            right: 0;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .mi-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 275px;
+            min-width: 275px;
+            transform: translateX(-105%);
+            transition: transform .25s ease;
+            box-shadow: 15px 0 40px #0001;
+          }
+
+          .mi-sidebar.mi-sidebar-open {
+            transform: translateX(0);
+          }
+
+          .mi-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 19;
+            display: block;
+            background: #11182766;
+            backdrop-filter: blur(3px);
+          }
+
+          .mi-close {
+            display: block;
+            margin-left: auto;
+            border: 0;
+            background: transparent;
+            color: #888;
+            font-size: 25px;
+          }
+
+          .mi-menu-button {
+            display: grid;
+            place-items: center;
+            width: 35px;
+            height: 35px;
+            border: 1px solid var(--mi-line);
+            border-radius: 10px;
+            background: #fff;
+            color: #343948;
+          }
+
+          .mi-topbar {
+            height: 63px;
+            padding: 0 15px;
+            gap: 10px;
+          }
+
+          .mi-breadcrumb {
+            flex: 1;
+            font-size: 9px;
+          }
+
+          .mi-online-text {
+            display: none;
+          }
+
+          .mi-content {
+            padding: 18px 15px;
+          }
+
+          .mi-hero {
+            min-height: 280px;
+            padding: 28px 23px;
+            align-items: flex-start;
+          }
+
+          .mi-hero h1 {
+            font-size: 38px;
+          }
+
+          .mi-hero-content p {
+            max-width: 235px;
+            font-size: 9px;
+          }
+
+          .mi-hero-art {
+            width: 165px;
+            height: 150px;
+            right: -25px;
+            top: 130px;
+            opacity: .65;
+          }
+
+          .mi-art-core {
+            width: 65px;
+            height: 65px;
+            border-radius: 20px;
+            font-size: 34px;
+          }
+
+          .mi-art-orbit {
+            width: 130px;
+            height: 130px;
+          }
+
+          .mi-orbit-two {
+            width: 160px;
+            height: 160px;
+          }
+
+          .mi-float-one { top: 5px; right: 34px; }
+          .mi-float-two { bottom: 8px; right: 30px; }
+          .mi-float-three { left: 4px; top: 60px; }
+
+          .mi-stats {
+            gap: 8px;
+            margin: 14px 0 33px;
+          }
+
+          .mi-stat {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 11px;
+            border-radius: 13px;
+          }
+
+          .mi-stat-icon {
+            width: 31px;
+            height: 31px;
+            flex-basis: 31px;
+            border-radius: 9px;
+            font-size: 15px;
+          }
+
+          .mi-stat strong {
+            font-size: 15px;
+          }
+
+          .mi-stat div span {
+            font-size: 7px;
+          }
+
+          .mi-section-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .mi-section-heading h2, .mi-community-heading h2 {
+            font-size: 24px;
+          }
+
+          .mi-search {
+            width: 100%;
+          }
+
+          .mi-tools-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+          }
+
+          .mi-tool-card {
+            min-height: 205px;
+            padding: 12px;
+            border-radius: 14px;
+          }
+
+          .mi-tool-icon {
+            width: 37px;
+            height: 37px;
+            flex-basis: 37px;
+            border-radius: 11px;
+          }
+
+          .mi-tool-card h3 {
+            font-size: 11px;
+          }
+
+          .mi-tool-card > p {
+            font-size: 8px;
+          }
+
+          .mi-community {
+            margin-top: 36px;
+          }
+
+          .mi-community-grid, .mi-posts {
+            grid-template-columns: 1fr;
+          }
+
+          .mi-footer {
+            flex-direction: column;
+            gap: 8px;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .mi-tools-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .mi-tool-card {
+            min-height: 190px;
+          }
+
+          .mi-hero h1 {
+            font-size: 33px;
+          }
+        }
+      `}</style>
+    </main>
+  );
 }
