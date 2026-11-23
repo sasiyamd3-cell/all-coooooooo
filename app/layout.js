@@ -1,15 +1,27 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "MIYORA — Your Digital World",
-  description: "A refined digital ecosystem for AI tools, developer utilities, ideas, and makers.",
-  applicationName: "MIYORA",
-  keywords: ["MIYORA", "AI tools", "developer tools", "digital workspace"]
+  title: "MIYORA | All-in-One Platform",
+  description:
+    "MIYORA - Your premium all-in-one digital platform.",
+  keywords: [
+    "MIYORA",
+    "AI Tools",
+    "Developer Tools",
+    "Digital Platform",
+  ],
+  authors: [{ name: "MIYORA Team" }],
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#080808",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
